@@ -33,6 +33,8 @@ class Moneris_Transaction
 
 	/**
 	 * @param Moneris_Gateway $gateway
+	 * @param array $params
+	 * @param bool $prepare_params
 	 */
 	public function __construct(Moneris_Gateway $gateway, array $params = array(), $prepare_params = true)
 	{
@@ -80,9 +82,14 @@ class Moneris_Transaction
 
 					if ($this->gateway()->check_avs()) {
 
-						if (! isset($params['avs_street_number'])) $errors[] = 'Street number not provided';
-						if (! isset($params['avs_street_name'])) $errors[] = 'Street name not provided';
-						if (! isset($params['avs_zipcode'])) $errors[] = 'Zip/postal code not provided';
+						if ($this->gateway()->check_avs_street_number() && ! isset($params['avs_street_number']))
+							$errors[] = 'Street number not provided';
+
+						if ($this->gateway()->check_avs_street_name() && ! isset($params['avs_street_name']))
+							$errors[] = 'Street name not provided';
+
+						if ($this->gateway()->check_avs_zipcode() && ! isset($params['avs_zipcode']))
+							$errors[] = 'Zip/postal code not provided';
 
 						//@TODO email is Amex/JCB only...
 						//if (! isset($params['avs_email'])) $errors[] = 'Email not provided';

@@ -45,7 +45,11 @@ class Moneris
 	 * 			- environment string
 	 * 			- require_cvd bool
 	 * 			- require_avs bool
+	 * 			- require_avs_street_number bool
+	 * 			- require_avs_street_name bool
+	 * 			- require_avs_zipcode bool
 	 * 			- avs_codes array
+	 * @throws Moneris_Exception
 	 * @return Moneris_Gateway
 	 */
 	static public function create(array $params)
@@ -63,8 +67,21 @@ class Moneris
 		if (isset($params['cvd_codes']))
 			$gateway->successful_cvd_codes($params['cvd_codes']);
 
-		if (isset($params['require_avs']))
+		if (isset($params['require_avs'])) {
 			$gateway->require_avs((bool) $params['require_avs']);
+
+			$gateway->require_avs_params(
+				array_merge(
+					array_map(function ($param) use ($params) {
+						return array($param => isset($params[$param]) ? (bool) $params[$param] : true);
+					}, array(
+						'require_avs_street_number',
+						'require_avs_street_name',
+						'require_avs_zipcode',
+					))
+				)
+			);
+		}
 
 		if (isset($params['avs_codes']))
 			$gateway->successful_avs_codes($params['avs_codes']);

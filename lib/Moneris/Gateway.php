@@ -11,6 +11,12 @@ class Moneris_Gateway
 
 	protected $_require_avs = false;
 
+	protected $_require_avs_street_number = false;
+
+	protected $_require_avs_street_name = false;
+
+	protected $_require_avs_zipcode = false;
+
 	/**
 	 * Codes that we're willing to accept for AVS.
 	 * @var array
@@ -150,6 +156,36 @@ class Moneris_Gateway
 	public function check_avs()
 	{
 		return $this->_require_avs;
+	}
+
+	/**
+	 * Must AVS street number match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_street_number()
+	{
+		return $this->_require_avs_street_number;
+	}
+
+	/**
+	 * Must AVS street name match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_street_name()
+	{
+		return $this->_require_avs_street_name;
+	}
+
+	/**
+	 * Must AVS zipcode match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_zipcode()
+	{
+		return $this->_require_avs_zipcode;
 	}
 
 	/**
@@ -312,6 +348,22 @@ class Moneris_Gateway
 	public function require_avs($require_it = true)
 	{
 		$this->_require_avs = $require_it;
+		return $this;
+	}
+
+	/**
+	 * Require specific address verification.
+	 *
+	 * @param array $params
+	 * @return Moneris_Gateway Fluid interface
+	 */
+	public function require_avs_params($params = array())
+	{
+		foreach ($params as $param => $require_it) {
+			if (property_exists($this, '_' . $param) && preg_match('/^require_avs_/', $param)) {
+				$this->{'_' . $param} = $require_it;
+			}
+		}
 		return $this;
 	}
 
