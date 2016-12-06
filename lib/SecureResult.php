@@ -1,8 +1,13 @@
 <?php
+
+namespace Moneris;
+
 /**
- * Holy shit, this is a kludge. Need to refactor to support different result types...
+ * 3-D Secure Protocol response.
+ *
+ * @package Moneris
  */
-class Moneris_3DSecureResult extends Moneris_Result
+class SecureResult extends Result
 {
 	protected $_is_enrolled = false;
 
@@ -36,7 +41,7 @@ class Moneris_3DSecureResult extends Moneris_Result
 	/**
 	 * The response from Moneris.
 	 *
-	 * @return SimpleXmlObject
+	 * @return \SimpleXmlElement
 	 */
 	public function response()
 	{
@@ -76,7 +81,7 @@ class Moneris_3DSecureResult extends Moneris_Result
 	/**
 	 * Validate the response from Moneris to see if it was successful.
 	 *
-	 * @return Moneris_Result
+	 * @return SecureResult
 	 */
 	public function validate_response()
 	{
@@ -85,15 +90,16 @@ class Moneris_3DSecureResult extends Moneris_Result
 
 		// did the transaction go through?
 		if ('Error' == $response->type) {
-			$this->error_code(Moneris_Result::ERROR)
+			$this->error_code(Result::ERROR)
 				->was_successful(false);
-			return $this;
+		} else {
+			$this->was_successful("true" == $response->success);
+
+			if ($this->was_successful() && isset($response->message)) {
+				$this->_is_enrolled = 'Y' == $response->message;
+			}
 		}
 
-		$this->was_successful("true" == $response->success);
-		if ($this->was_successful() && isset($response->message)) {
-			$this->_is_enrolled = 'Y' == $response->message;
-		}
 		return $this;
 	}
 

@@ -2,8 +2,8 @@
 if (! defined('ROOT')) {
 	define('ROOT', dirname(dirname(__FILE__)));
 }
+
 require_once ROOT . '/simpletest/autorun.php';
-require_once ROOT . '/lib/Moneris.php';
 
 /**
  * 
@@ -32,7 +32,7 @@ class TestBasic extends UnitTestCase
 		$transaction = $result->transaction();
 		$capture_result = $gateway->capture($transaction);
 		
-		$this->assertIsA($capture_result, 'Moneris_Result');
+		$this->assertIsA($capture_result, 'Moneris\Result');
 		$this->assertTrue($capture_result->was_successful());
 	}
 	
@@ -41,7 +41,7 @@ class TestBasic extends UnitTestCase
 		$gateway = $this->_gateway(array('require_cvd' => false));
 		$result = $this->_preauth($gateway);
 		
-		$this->assertIsA($result, 'Moneris_Result');
+		$this->assertIsA($result, 'Moneris\Result');
 		$this->assertTrue($result->was_successful());
 	}
 	
@@ -49,7 +49,7 @@ class TestBasic extends UnitTestCase
 	{
 		$gateway = $this->_gateway(array('require_cvd' => false));
 		$result = $this->_purchase($gateway);
-		$this->assertIsA($result, 'Moneris_Result');
+		$this->assertIsA($result, 'Moneris\Result');
 		$this->assertTrue($result->was_successful());
 	}
 	
@@ -72,7 +72,7 @@ class TestBasic extends UnitTestCase
 		
 		$result = $gateway->purchase($params);
 		
-		$this->assertIsA($result, 'Moneris_Result');
+		$this->assertIsA($result, 'Moneris\Result');
 		$this->assertTrue($result->was_successful());
 		$this->assertFalse($result->failed_avs());
 		$this->assertFalse($result->failed_cvd());
@@ -87,7 +87,7 @@ class TestBasic extends UnitTestCase
 		$transaction = $result->transaction();
 		$refund_result = $gateway->refund($transaction);
 		
-		$this->assertIsA($refund_result, 'Moneris_Result');
+		$this->assertIsA($refund_result, 'Moneris\Result');
 		$this->assertTrue($refund_result->was_successful());
 	}
 	
@@ -109,45 +109,46 @@ class TestBasic extends UnitTestCase
 		);
 		
 		$result = $gateway->verify($params);
-		$this->assertIsA($result, 'Moneris_Result');
+		$this->assertIsA($result, 'Moneris\Result');
 		$this->assertTrue($result->was_successful());
 		$this->assertFalse($result->failed_avs());
 		$this->assertFalse($result->failed_cvd());
 	}
-	
+
 	public function testVoid()
 	{
 		$gateway = $this->_gateway(array('require_cvd' => false));
 		$result = $this->_purchase($gateway);
-		
+
 		$this->assertTrue($result->was_successful());
 		
 		$transaction = $result->transaction();
 		$void_result = $gateway->void($transaction);
 		
-		$this->assertIsA($void_result, 'Moneris_Result');
+		$this->assertIsA($void_result, 'Moneris\Result');
 		$this->assertTrue($void_result->was_successful());
 	}
-	
+
 	/**
-	 * Get a dang gateway!
+	 * @param array $params
 	 *
-	 * @return Moneris_Gateway
+	 * @return Moneris\Gateway
 	 */
 	protected function _gateway($params = array())
 	{
 		$default_params = array(
 			'api_key' => 'yesguy',
 			'store_id' => $this->_store,
-			'environment' => Moneris::ENV_TESTING
+			'environment' => Moneris\Moneris::ENV_TESTING
 		);
-		return Moneris::create(array_merge($default_params, $params));
+
+		return Moneris\Moneris::create(array_merge($default_params, $params));
 	}
-	
+
 	/**
-	 * Make a purchase!
+	 * @param Moneris\Gateway $gateway
 	 *
-	 * @return Moneris_Result
+	 * @return Moneris\Result
 	 */
 	protected function _preauth($gateway)
 	{
@@ -159,13 +160,14 @@ class TestBasic extends UnitTestCase
 			'expiry_month' => date('m', $time),
 			'expiry_year' => date('y', $time)
 		);
+
 		return $gateway->preauth($params);
 	}
-	
+
 	/**
-	 * Make a purchase!
+	 * @param Moneris\Gateway $gateway
 	 *
-	 * @return Moneris_Result
+	 * @return Moneris\Result
 	 */
 	protected function _purchase($gateway)
 	{
@@ -177,6 +179,7 @@ class TestBasic extends UnitTestCase
 			'expiry_month' => date('m', $time),
 			'expiry_year' => date('y', $time)
 		);
+
 		return $gateway->purchase($params);
 	}
 }
