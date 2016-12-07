@@ -1,10 +1,14 @@
 <?php
-require '../lib/Moneris.php';
+
+// "composer dump-autoload" to generate this file.
+require_once('../vendor/autoload.php');
+
+use Moneris\Moneris;
+use Moneris\MonerisException;
 
 $errors = array();
 
 if (! empty($_POST)) {
-
 	// use the testing server for the demo:
 	$moneris = Moneris::create(
 		array(
@@ -13,30 +17,23 @@ if (! empty($_POST)) {
 			'environment' => Moneris::ENV_STAGING
 		)
 	);
-	
+
 	// generate a unique transaction ID:
 	$_POST['transaction']['order_id'] = uniqid('ks_api', true);
-	
+
 	try {
-		
 		// try to make the purchase:
 		$result = $moneris->purchase($_POST['transaction']);
-		
+
 		if ($result->was_successful()) {
-		
 			// hooray! 
 			die("Hot diggity dog!");
-		
 		} else {
-		
 			$errors = $result->errors();
-	
 		}
-		
-	} catch (Moneris_Exception $e) {
+	} catch (MonerisException $e) {
 		$errors[] = $e->getMessage();
 	}
-	
 }
 
 
@@ -48,7 +45,7 @@ if (! empty($_POST)) {
 	<title>Simple Purchase | Keith Silgard's Moneris API</title>
 </head>
 <body>
-	
+
 
 	<?php if (! empty($errors)): ?>
 		<div style="background: #fcc; border: 1px solid #c00; padding: 10px; margin: 10px 2px;">
@@ -61,7 +58,7 @@ if (! empty($_POST)) {
 	<?php endif; ?>
 
 	<form action="purchase.php" method="post" accept-charset="utf-8">
-		
+
 		<fieldset>
 			<legend>Simple Moneris Purchase</legend>
 			
@@ -101,9 +98,7 @@ if (! empty($_POST)) {
 			<button type="submit">Complete Purchase</button>
 			
 		</fieldset>
-		
-		
-		
+
 	</form>
 </body>
 </html>

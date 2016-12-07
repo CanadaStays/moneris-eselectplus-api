@@ -1,5 +1,8 @@
 <?php
-class Moneris_Gateway
+
+namespace Moneris;
+
+class Gateway
 {
 	protected $_api_key;
 
@@ -11,11 +14,17 @@ class Moneris_Gateway
 
 	protected $_require_avs = false;
 
+	protected $_require_avs_street_number = false;
+
+	protected $_require_avs_street_name = false;
+
+	protected $_require_avs_zipcode = false;
+
 	/**
 	 * Codes that we're willing to accept for AVS.
 	 * @var array
 	 */
-	protected $_successful_avs_codes = array('A','B', 'D', 'M', 'P', 'W', 'X', 'Y', 'Z');
+	protected $_successful_avs_codes = array('A', 'B', 'D', 'M', 'P', 'W', 'X', 'Y', 'Z');
 
 	/**
 	 * Codes that we're willing to accept for CVD.
@@ -27,7 +36,7 @@ class Moneris_Gateway
 
 	/**
 	 * Transaction object.
-	 * @var Moneris_Transaction
+	 * @var Transaction
 	 */
 	protected $_transaction = null;
 
@@ -50,7 +59,7 @@ class Moneris_Gateway
 	 * 		Required:
 	 *			- PaRes string No idea what this is, but it's a mess of chars.
 	 * 			- MD string Information that will be returned to allow you to process the response
-	 * @return Moneris_3DSecureResult
+	 * @return SecureResult
 	 */
 	public function acs(array $params)
 	{
@@ -90,12 +99,14 @@ class Moneris_Gateway
 	 * 		Optional:
 	 *			- description string A description of the purchase, up to 20 chars
 	 *			- cust_id string An identifier for the customer, up to 50 chars
-	 * @return Moneris_Result
+	 * @return Result
 	 */
 	public function cavv_purchase(array $params)
 	{
 		$params['type'] = 'cavv_purchase';
+
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
@@ -103,31 +114,34 @@ class Moneris_Gateway
 	 * Set/get the API key.
 	 *
 	 * @param string $key Optional. If provided, set the value for the key.
-	 * @return string|Moneris_Gateway Fluid interface for set operations.
+	 * @return string|Gateway Fluid interface for set operations.
 	 */
 	public function api_key($key = null)
 	{
 		if (! is_null($key)) {
 			$this->_api_key = $key;
+
 			return $this;
 		}
+
 		return $this->_api_key;
 	}
 
 	/**
 	 * Capture a pre-authorized transaction.
 	 *
-	 * @param string|Moneris_Transation $transaction_number
-	 * @param string $order_id Required if first param isn't an instance of Moneris_Transation
-	 * @return void
+	 * @param string|Transaction $transaction_number
+	 * @param string $order_id Required if first param isn't an instance of Transaction
+	 * @return Result
 	 */
 	public function capture($transaction_number, $order_id = null, $amount = null)
 	{
-		if ($transaction_number instanceof Moneris_Transaction) {
+		if ($transaction_number instanceof Transaction) {
 			$order_id = $transaction_number->order_id();
 			$amount = is_null($amount) ? $transaction_number->amount() : $amount;
 			$transaction_number = $transaction_number->number();
 		}
+
 		// these have to be in this order!
 		$params = array(
 			'type' => 'completion',
@@ -153,6 +167,36 @@ class Moneris_Gateway
 	}
 
 	/**
+	 * Must AVS street number match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_street_number()
+	{
+		return $this->_require_avs_street_number;
+	}
+
+	/**
+	 * Must AVS street name match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_street_name()
+	{
+		return $this->_require_avs_street_name;
+	}
+
+	/**
+	 * Must AVS zipcode match?
+	 *
+	 * @return bool
+	 */
+	public function check_avs_zipcode()
+	{
+		return $this->_require_avs_zipcode;
+	}
+
+	/**
 	 * Do the CVD digits need to be checked?
 	 *
 	 * @return bool
@@ -166,8 +210,7 @@ class Moneris_Gateway
 	 * Get/set the API environment.
 	 *
 	 * @param string $environment
-	 * @return void
-	 * @author Keith Silgard
+	 * @return mixed
 	 */
 	public function environment($environment = null)
 	{
@@ -213,13 +256,15 @@ class Moneris_Gateway
 	 * 		Optional:
 	 *			- description string A description of the purchase, up to 20 chars
 	 *			- cust_id string An identifier for the customer, up to 50 chars
-	 * @return Moneris_Result
+	 * @return Result
 	 */
 	public function preauth(array $params)
 	{
 		$params['type'] = 'preauth';
 		$params['crypt_type'] = 7;
+
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
@@ -253,13 +298,15 @@ class Moneris_Gateway
 	 * 		Optional:
 	 *			- description string A description of the purchase, up to 20 chars
 	 *			- cust_id string An identifier for the customer, up to 50 chars
-	 * @return Moneris_Result
+	 * @return Result
 	 */
 	public function purchase(array $params)
 	{
 		$params['type'] = 'purchase';
 		$params['crypt_type'] = 7;
+
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
@@ -271,17 +318,19 @@ class Moneris_Gateway
 	/**
 	 * Refund a transaction.
 	 *
-	 * @param string|Moneris_Transation $transaction_number
-	 * @param string $order_id Required if first param isn't an instance of Moneris_Transation
-	 * @return void
+	 * @param string|Transaction $transaction_number
+	 * @param string $order_id Required if first param isn't an instance of Transaction
+	 * @param mixed $amount
+	 * @return Result
 	 */
 	public function refund($transaction_number, $order_id = null, $amount = null)
 	{
-		if ($transaction_number instanceof Moneris_Transaction) {
+		if ($transaction_number instanceof Transaction) {
 			$order_id = $transaction_number->order_id();
 			$amount = is_null($amount) ? $transaction_number->amount() : $amount;
 			$transaction_number = $transaction_number->number();
 		}
+
 		// the order of these params matters for some amazingly insane reason:
 		$params = array(
 			'type' => 'refund',
@@ -292,13 +341,8 @@ class Moneris_Gateway
 		);
 
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
-	}
-
-
-	public function result()
-	{
-		return $this->transaction()->result();
 	}
 
 	/**
@@ -306,12 +350,29 @@ class Moneris_Gateway
 	 * Transaction will require additional AVS params.
 	 *
 	 * @param bool $require_it
-	 * @return Moneris_Gateway Fluid interface
-	 * @author Keith Silgard
+	 * @return $this
 	 */
 	public function require_avs($require_it = true)
 	{
 		$this->_require_avs = $require_it;
+
+		return $this;
+	}
+
+	/**
+	 * Require specific address verification.
+	 *
+	 * @param array $params
+	 * @return $this
+	 */
+	public function require_avs_params($params = array())
+	{
+		foreach ($params as $param => $require_it) {
+			if (property_exists($this, '_' . $param) && preg_match('/^require_avs_/', $param)) {
+				$this->{'_' . $param} = $require_it;
+			}
+		}
+
 		return $this;
 	}
 
@@ -320,12 +381,13 @@ class Moneris_Gateway
 	 * Transaction will require additional CVD params.
 	 *
 	 * @param bool $require_it
-	 * @return Moneris_Gateway Fluid interface
-	 * @author Keith Silgard
+     *
+	 * @return $this
 	 */
 	public function require_cvd($require_it = true)
 	{
 		$this->_require_cvd = $require_it;
+
 		return $this;
 	}
 
@@ -333,14 +395,16 @@ class Moneris_Gateway
 	 * Set/get the store ID.
 	 *
 	 * @param string $id Optional. If provided, set the value for the id.
-	 * @return string|Moneris_Gateway Fluid interface for set operations.
+	 * @return string|Gateway Fluid interface for set operations.
 	 */
 	public function store_id($id = null)
 	{
 		if (! is_null($id)) {
 			$this->_store_id = $id;
+
 			return $this;
 		}
+
 		return $this->_store_id;
 	}
 
@@ -348,15 +412,16 @@ class Moneris_Gateway
 	 * Get or set the AVS codes we'll use to determine a successful transaction.
 	 *
 	 * @param array $codes
-	 * @return array|Moneris_Gateway Fluid interface for set operations
-	 * @author Keith Silgard
+	 * @return array|Gateway Fluid interface for set operations
 	 */
 	public function successful_avs_codes(array $codes = null)
 	{
 		if (! is_null($codes)) {
 			$this->_successful_avs_codes = $codes;
+
 			return $this;
 		}
+
 		return $this->_successful_avs_codes;
 	}
 
@@ -364,28 +429,31 @@ class Moneris_Gateway
 	 * Get or set the CVD codes we'll use to determine a successful transaction.
 	 *
 	 * @param array $codes
-	 * @return array|Moneris_Gateway Fluid interface for set operations
-	 * @author Keith Silgard
+	 * @return array|Gateway Fluid interface for set operations
 	 */
 	public function successful_cvd_codes(array $codes = null)
 	{
 		if (! is_null($codes)) {
 			$this->_successful_cvd_codes = $codes;
+
 			return $this;
 		}
+
 		return $this->_successful_cvd_codes;
 	}
 
 	/**
 	 * Get a transaction object!
 	 *
-	 * @param bool $force_new Always return a new transaction.
-	 * @return Moneris_Transaction
+	 * @param array $params
+	 * @return Transaction
 	 */
 	public function transaction(array $params = null)
 	{
-		if (is_null($this->_transaction) || ! is_null($params))
-			return $this->_transaction = new Moneris_Transaction($this, $params);
+		if (is_null($this->_transaction) || ! is_null($params)) {
+			return $this->_transaction = new Transaction($this, $params);
+		}
+
 		return $this->_transaction;
 	}
 
@@ -404,7 +472,7 @@ class Moneris_Gateway
 	 * 		Optional (will be added if you skip them):
 	 *			- accept string MIME types accepted by the browser
 	 *			- userAgent string Browser user-agent
-	 * @return Moneris_3DSecureResult
+	 * @return SecureResult
 	 */
 	public function txn(array $params)
 	{
@@ -420,6 +488,7 @@ class Moneris_Gateway
 		}
 
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
@@ -428,11 +497,12 @@ class Moneris_Gateway
 	 * For unit tests only, not the Moneris staging server tests.
 	 *
 	 * @param bool $use_it
-	 * @return Moneris Fluid interface
+	 * @return $this
 	 */
 	public function use_test_mode($use_it = true)
 	{
 		$this->_test_mode = $use_it;
+
 		return $this;
 	}
 
@@ -466,26 +536,28 @@ class Moneris_Gateway
 	 * 		Optional:
 	 *			- description string A description of the purchase, up to 20 chars
 	 *			- cust_id string An identifier for the customer, up to 50 chars
-	 * @return Moneris_Result
+	 * @return Result
 	 */
 	public function verify(array $params)
 	{
 		$params['type'] = 'card_verification';
 		$params['crypt_type'] = 7;
+
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
 	/**
 	 * Void a transaction.
 	 *
-	 * @param string|Moneris_Transation $transaction_number
-	 * @param string $order_id Required if first param isn't an instance of Moneris_Transation
-	 * @return void
+	 * @param string|Transaction $transaction_number
+	 * @param string $order_id Required if first param isn't an instance of Transaction
+	 * @return Result
 	 */
 	public function void($transaction_number, $order_id = null)
 	{
-		if ($transaction_number instanceof Moneris_Transaction) {
+		if ($transaction_number instanceof Transaction) {
 			$order_id = $transaction_number->order_id();
 			$transaction_number = $transaction_number->number();
 		}
@@ -497,18 +569,18 @@ class Moneris_Gateway
 		);
 
 		$transaction = $this->transaction($params);
+
 	 	return $this->_process($transaction);
 	}
 
 	/**
 	 * Submit a transaction to the Moneris API and see how it works out!
 	 *
-	 * @param Moneris_Transaction $transaction
-	 * @return Moneris_Result
+	 * @param Transaction $transaction
+	 * @return Result
 	 */
-	protected function _process(Moneris_Transaction $transaction)
+	protected function _process(Transaction $transaction)
 	{
-		return Moneris_Processor::process($transaction);
+		return Processor::process($transaction);
 	}
-
 }

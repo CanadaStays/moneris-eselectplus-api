@@ -2,15 +2,15 @@
 if (! defined('ROOT')) {
 	define('ROOT', dirname(dirname(__FILE__)));
 }
+
 require_once ROOT . '/simpletest/autorun.php';
-require_once ROOT . '/lib/Moneris.php';
+
 
 /**
  *
  */
 class TestVbvMcsc extends UnitTestCase
 {
-
 	/**
 	 * You can use this to only run one test at a time for debugging.
 	 *
@@ -55,22 +55,25 @@ class TestVbvMcsc extends UnitTestCase
 		);
 
 		$result = $gateway->txn($params);
-		$this->assertIsA($result, 'Moneris_3DSecureResult');
+		$this->assertIsA($result, 'Moneris\SecureResult');
 		$this->assertTrue($result->is_enrolled());
 	}
 
 	/**
 	 * Get a dang gateway!
 	 *
-	 * @return Moneris_Gateway
+	 * @param array $params
+	 *
+	 * @return Moneris\Gateway
 	 */
 	protected function _gateway($params = array())
 	{
 		$default_params = array(
 			'api_key' => 'hurgle',
 			'store_id' => 'moneris',
-			'environment' => Moneris::ENV_TESTING
+			'environment' => Moneris\Moneris::ENV_TESTING
 		);
-		return Moneris::create(array_merge($default_params, $params));
+
+		return Moneris\Moneris::create(array_merge($default_params, $params));
 	}
 }

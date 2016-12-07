@@ -1,8 +1,8 @@
 <?php
-/**
- *
- */
-class Moneris_Processor
+
+namespace Moneris;
+
+class Processor
 {
 	/**
 	 * API config variables pulled from the terrible Moneris API.
@@ -41,29 +41,31 @@ class Moneris_Processor
 	/**
 	 * Do the necessary magic to process this transaction via the Moneris API.
 	 *
-	 * @param Moneris_Transaction $transaction
-	 * @return Moneris_Result
+	 * @param Transaction $transaction
+	 * @return Result
 	 */
-	static public function process(Moneris_Transaction $transaction)
+	static public function process(Transaction $transaction)
 	{
 		if (! $transaction->is_valid()) {
-			$result = new Moneris_Result($transaction);
+			$result = new Result($transaction);
 			$result->was_successful(false);
-			$result->error_code(Moneris_Result::ERROR_INVALID_POST_DATA);
+			$result->error_code(Result::ERROR_INVALID_POST_DATA);
+
 			return $result;
 		}
 
 		$response = self::_call_api($transaction);
+
 		return $transaction->validate_response($response);
 	}
 
 	/**
 	 * Do the curl call to process the API request.
 	 *
-	 * @param Moneris_Transaction $transaction
-	 * @return SimpleXMLElement
+	 * @param Transaction $transaction
+	 * @return \SimpleXMLElement
 	 */
-	static protected function _call_api(Moneris_Transaction $transaction)
+	static protected function _call_api(Transaction $transaction)
 	{
 		$gateway = $transaction->gateway();
 		$config = self::config($gateway->environment());
@@ -113,9 +115,6 @@ class Moneris_Processor
 		// force fail CVD for testing
 		//$xml->receipt->CvdResultCode = '1N';
 
-		//var_dump($xml);
-
 		return $xml;
-
 	}
 }

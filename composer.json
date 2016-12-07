@@ -8,13 +8,10 @@
         "php": ">=5.2.4"
     },
     "autoload": {
-        "psr-0": {
-            "Moneris": "lib/"
+        "psr-4": {
+            "Moneris\\": "lib/"
         }
     },
-    "include-path": [
-        "lib/"
-    ],
     "authors": [
         {
             "name": "Keith Silgard",

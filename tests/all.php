@@ -13,12 +13,12 @@ if (! defined('ROOT')) {
 	define('ROOT', dirname(dirname(__FILE__)));
 }
 require_once ROOT . '/simpletest/autorun.php';
-require_once ROOT . '/lib/Moneris.php';
 
 class AllTests extends TestSuite
 {
 	function __construct() {
 		parent::__construct();
+
 		$this->addFile('basic.php');
 	}
 }

@@ -1,10 +1,14 @@
 <?php
+
+namespace Moneris;
+
+use SimpleXMLElement;
+
 /**
  * Mostly takes care of validation.
  */
-class Moneris_Transaction
+class Transaction
 {
-
 	/**
 	 * @var array
 	 */
@@ -27,14 +31,16 @@ class Moneris_Transaction
 
 	/**
 	 * The result object for this transaction.
-	 * @var Moneris_Result
+	 * @var Result
 	 */
 	protected $_result = null;
 
 	/**
-	 * @param Moneris_Gateway $gateway
+	 * @param Gateway $gateway
+	 * @param array $params
+	 * @param bool $prepare_params
 	 */
-	public function __construct(Moneris_Gateway $gateway, array $params = array(), $prepare_params = true)
+	public function __construct(Gateway $gateway, array $params = array(), $prepare_params = true)
 	{
 		$this->gateway($gateway);
 		$this->_params = $prepare_params ? $this->prepare($params) : $params;
@@ -80,9 +86,14 @@ class Moneris_Transaction
 
 					if ($this->gateway()->check_avs()) {
 
-						if (! isset($params['avs_street_number'])) $errors[] = 'Street number not provided';
-						if (! isset($params['avs_street_name'])) $errors[] = 'Street name not provided';
-						if (! isset($params['avs_zipcode'])) $errors[] = 'Zip/postal code not provided';
+						if ($this->gateway()->check_avs_street_number() && ! isset($params['avs_street_number']))
+							$errors[] = 'Street number not provided';
+
+						if ($this->gateway()->check_avs_street_name() && ! isset($params['avs_street_name']))
+							$errors[] = 'Street name not provided';
+
+						if ($this->gateway()->check_avs_zipcode() && ! isset($params['avs_zipcode']))
+							$errors[] = 'Zip/postal code not provided';
 
 						//@TODO email is Amex/JCB only...
 						//if (! isset($params['avs_email'])) $errors[] = 'Email not provided';
@@ -158,29 +169,32 @@ class Moneris_Transaction
 	 * Get or set errors.
 	 *
 	 * @param array $errors
-	 * @return array|Moneris_Result Fluid interface for set operations.
+	 * @return array|Transaction Fluid interface for set operations.
 	 */
 	public function errors(array $errors = null)
 	{
 		if (! is_null($errors)) {
 			$this->_errors = $errors;
+
 			return $this;
 		}
+
 		return $this->_errors;
 	}
 
 	/**
 	 * Get or set the gateway object.
 	 *
-	 * @param Moneris_Gateway $gateway Optional.
-	 * @return Moneris_Gateway|Moneris_Transaction Fluid interface for set operations
+	 * @param Gateway $gateway Optional.
+	 * @return Gateway|Transaction Fluid interface for set operations
 	 */
-	public function gateway(Moneris_Gateway $gateway = null)
+	public function gateway(Gateway $gateway = null)
 	{
 		if (! is_null($gateway)) {
 			$this->_gateway = $gateway;
 			return $this;
 		}
+
 		return $this->_gateway;
 	}
 
@@ -213,14 +227,17 @@ class Moneris_Transaction
 	 * Get or some some params! Like a boss!
 	 *
 	 * @param array $params
-	 * @return array|Moneris_Transaction Fluid interface on set operations.
+	 * @param bool $prepare_params
+	 * @return array|Transaction Fluid interface on set operations.
 	 */
 	public function params(array $params = null, $prepare_params = true)
 	{
 		if (! is_null($params)) {
 			$this->_params = $prepare_params ? $this->prepare($params) : $params;
+
 			return $this;
 		}
+
 		return $this->_params;
 	}
 
@@ -265,14 +282,16 @@ class Moneris_Transaction
 	 * Get or set the response.
 	 *
 	 * @param SimpleXMLElement $response
-	 * @return SimpleXMLElement|Moneris_Transaction Fluid interface for set operations
+	 * @return SimpleXMLElement|Transaction Fluid interface for set operations
 	 */
 	public function response(SimpleXMLElement $response = null)
 	{
 		if (! is_null($response)) {
 			$this->_response = $response;
+
 			return $this;
 		}
+
 		return $this->_response;
 	}
 
@@ -286,7 +305,6 @@ class Moneris_Transaction
 		$gateway = $this->gateway();
 		$params = $this->params();
 
-		// starting to get UGLY...
 		$request_type = in_array($params['type'], array('txn', 'acs')) ? 'MpiRequest' : 'request';
 
 		$xml = new SimpleXMLElement("<$request_type/>");
@@ -328,13 +346,15 @@ class Moneris_Transaction
 	 * Was this transaction a huge success?
 	 *
 	 * @param SimpleXMLElement $response
-	 * @return Moneris_Result
+	 * @return Result
 	 */
 	public function validate_response(SimpleXMLElement $response)
 	{
 		$this->response($response);
-		$result = Moneris_Result::factory($this);
+
+		$result = Result::factory($this);
 		$result->validate_response();
+
 		return $result;
 	}
 
